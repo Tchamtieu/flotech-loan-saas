@@ -27,7 +27,7 @@ import { SuperAdminSuitePage } from '@/pages/SuperAdminSuitePage';
 export function App() {
   return (
     <AuthSessionProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Architecture & Design System Inspection Hub */}
           <Route
