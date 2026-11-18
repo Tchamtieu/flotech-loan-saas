@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Approved FloTech Digital Design System Tokens */
+  --flotech-primary: #2563eb;
+  --flotech-navy: #0f172a;
+  --flotech-bg: #f8fafc;
+  --flotech-white: #ffffff;
+  --flotech-success: #16a34a;
+  --flotech-warning: #f59e0b;
+  --flotech-danger: #dc2626;
+  --flotech-teal: #0d9488;
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--flotech-bg);
+    color: var(--flotech-navy);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Tabular numerals for all monetary figures, rates, and schedules */
+  .tabular-money {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}

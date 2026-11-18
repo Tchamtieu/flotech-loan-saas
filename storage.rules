@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// =============================================================================
+// FLOTECH DIGITAL — FIREBASE STORAGE SECURITY RULES
+// -----------------------------------------------------------------------------
+// PostgreSQL is the source of truth for tenant memberships, so Storage rules
+// cannot check business membership directly. Defence is layered:
+//   1. These rules: authentication, owner-only avatars, create-only objects
+//      (no overwrite/delete from clients), size and content-type limits, and
+//      no direct client reads of tenant files.
+//   2. Backend: every storage path saved to PostgreSQL is validated against the
+//      caller's identity / business (`avatars/{uid}/`, `businesses/{id}/branding/`,
+//      `businesses/{id}/customers/{customerId}/kyc/`) — tested in Phase 5 & 13.
+// Recommended hardening (see PHASE_13 audit, M-3): issue backend-signed upload
+// URLs or Firebase custom claims carrying business IDs.
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(png|jpeg|webp|gif)');
+    }
+
+    function isKycDocument() {
+      return request.resource.contentType.matches('image/(png|jpeg|webp)')
+        || request.resource.contentType == 'application/pdf';
+    }
+
+    // Personal avatars: only the owning Firebase user may read or create.
+    match /avatars/{uid}/{fileName} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && isImage()
+        && request.resource.size < 2 * 1024 * 1024;
+      allow update, delete: if false;
+    }
+
+    // Business logos.
+    match /businesses/{businessId}/branding/{fileName} {
+      allow read: if false;
+      allow create: if isSignedIn()
+        && isImage()
+        && request.resource.size < 2 * 1024 * 1024;
+      allow update, delete: if false;
+    }
+
+    // Customer KYC documents (sensitive): create-only, never readable by clients.
+    match /businesses/{businessId}/customers/{customerId}/kyc/{fileName} {
+      allow read: if false;
+      allow create: if isSignedIn()
+        && isKycDocument()
+        && request.resource.size < 10 * 1024 * 1024;
+      allow update, delete: if false;
+    }
+
+    // Deny everything else.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
